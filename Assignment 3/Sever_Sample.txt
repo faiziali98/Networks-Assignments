@@ -1,0 +1,91 @@
+import threading
+import socket
+import time
+
+host='127.0.0.1'
+port=5000
+
+WorkerClients=[]
+client=('',0)
+job=''
+
+tLock=threading.Lock()
+
+s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+s.bind((host,port))
+s.setblocking(0)
+
+print "Server Started"
+i = 0;
+
+locked=False
+lockT=False
+found=False
+
+
+
+
+
+def SendingJobs (name,job):
+	try:
+		global stop
+		stop=int (1)
+		global locked
+		for x in range(97,123):
+			while locked:
+				pass
+			tLock.acquire()
+			lockT=True
+			for worker in WorkerClients:
+				if (stop==0):
+					break
+				s.sendto(job+" "+str(x)+" "+str(x+1),worker)
+			if (stop==0):
+				break
+			lockT=False
+			tLock.release()
+		stop=1
+		lockT=False
+		print ("End of Job")
+		#s.sendto("Word not Found",client)
+		tLock.release()
+	except:
+		pass
+
+while True:
+	try:
+		while lockT:
+			pass
+		tLock.acquire()
+		locked=True
+		data,addr=s.recvfrom(1024)
+
+		if "Worker" in str(data):
+			WorkerClients.append(addr)
+			print("Worker Client Added")
+
+		if "Client" in str(data):
+			print("Client Arrived, job to do is "+str(data[7:]))
+			job=str(data[7:])
+			client=addr
+			if len(WorkerClients)==0:
+				s.sendto("No Worker Client yet",client)			
+			rT=threading.Thread(target=SendingJobs,args=("JobThread",job))
+			rT.start()
+		if "Word Found: " in str(data):
+			stop=0
+			s.sendto(str(data),client)
+			lockT=False
+			#rT.join()
+			found=True
+		locked=False
+	except:
+		pass
+	finally:
+		if (found==True):
+			found=False
+			#tLock.release()
+			#rT.join()
+		tLock.release()
+
+s.close()

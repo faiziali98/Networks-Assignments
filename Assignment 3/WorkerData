@@ -1,0 +1,9 @@
+import java.util.*;
+
+public class WorkerData{
+	private String ip;
+   	private int port;
+   	
+	public void WorkerData(){ 
+	}
+}
